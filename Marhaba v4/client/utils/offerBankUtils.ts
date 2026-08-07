@@ -42,11 +42,20 @@ export const getCurrency = (countryName: string | null | undefined): string => {
   return currencyByLowerName[countryName.trim().toLowerCase()] || "";
 };
 
-// Data arrives lowercased from the source flyers ("saudi arabia", "chicken liver");
-// display it capitalised without touching the stored value.
+// Data arrives inconsistently cased from the source flyers ("saudi arabia",
+// "LULU HYPERMARKET"); display it title-cased without touching the stored value.
+// Short all-caps tokens are acronyms (UAE, KSA, N/A, SAR) and stay as they are.
 export const toTitleCase = (value: unknown): string => {
   if (typeof value !== "string") return "";
-  return value.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return value
+    .trim()
+    .split(/(\s+)/)
+    .map((word) => {
+      if (/^\s+$/.test(word)) return word;
+      if (word.length <= 3 && word === word.toUpperCase() && /[A-Z]/.test(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join("");
 };
 
 export const sameStringArray =(a: string[], b: string[]): boolean => {

@@ -117,6 +117,16 @@ describe("data export workbook", () => {
       expect(pivots).toHaveLength(5);
     });
 
+    it("formats counts as integers and averages to two decimals", () => {
+      const fields = Object.keys(template)
+        .filter((f) => /^xl\/pivotTables\/pivotTable\d+\.xml$/.test(f))
+        .map((f) => strFromU8(template[f]).match(/<dataField[^>]*\/>/)?.[0] ?? "");
+      // Built-in numFmtId 1 = "0", 2 = "0.00".
+      for (const field of fields) {
+        expect(field).toContain(field.includes('subtotal="count"') ? 'numFmtId="1"' : 'numFmtId="2"');
+      }
+    });
+
     it("repoints the cache and forces a refresh on open", () => {
       const patched = patchCacheDefinition(cacheXml, 3);
       expect(patched).toContain('<worksheetSource ref="A1:O4" sheet="fulldata"/>');

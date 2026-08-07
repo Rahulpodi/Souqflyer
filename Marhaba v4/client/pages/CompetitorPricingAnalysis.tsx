@@ -17,7 +17,7 @@ import {
 
 import { supabase } from '@/lib/supabaseClient';
 import { buildBrandColorMap, getBrandColor } from '@/utils/brandColors';
-import { getCurrency } from '../utils/offerBankUtils';
+import { getCurrency, toTitleCase } from '../utils/offerBankUtils';
 
 // --- Custom Tooltip for Competitor Pricing ---
 const CustomTooltip = ({ active, payload, label, priceOption, currency, myBrand }: any) => {
@@ -1064,7 +1064,8 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                                 <XAxis 
-                                  dataKey="brand" 
+                                  dataKey="brand"
+                                  tickFormatter={toTitleCase}
                                   stroke="#71717a" 
                                   tick={{ fill: '#a1a1aa', fontSize: 12 }} 
                                   tickLine={false} 
@@ -1249,7 +1250,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                                                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                                     </svg>
                                                 </div>
-                                                <span className={row.brand === myBrand ? 'text-purple-300 font-bold' : 'text-zinc-100'}>{row.brand}</span>
+                                                <span className={row.brand === myBrand ? 'text-purple-300 font-bold' : 'text-zinc-100'}>{toTitleCase(row.brand)}</span>
                                             </td>
                                             <td className="text-center py-3.5 px-4 text-zinc-300 font-medium">{row.count}</td>
                                             <td className="text-center py-3.5 px-4 text-zinc-300">{getValueLabel(row.min)}</td>
@@ -1297,7 +1298,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                           style={{ color: getBrandColor(brandColorMap, b, i).main }}
                           className="hover:opacity-70 transition-opacity"
                         >
-                          {b} ✕
+                          {toTitleCase(b)} ✕
                         </button>
                       ))
                     : 'Select one or more brands to view details'}
@@ -1329,7 +1330,8 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
               <XAxis 
-                dataKey="retailer" 
+                dataKey="retailer"
+                tickFormatter={toTitleCase}
                 stroke="#71717a" 
                 tick={{ fill: '#a1a1aa', fontSize: 12 }} 
                 tickLine={false} 
@@ -1384,7 +1386,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                   key={`bar-${b}`}
                   yAxisId="left"
                   dataKey={`count__${b}`}
-                  name={`${b} — Offer Count`}
+                  name={`${toTitleCase(b)} — Offer Count`}
                   fill={`url(#retailerGrad-${compGradId(b)})`}
                   radius={[6,6,0,0]}
                   barSize={selectedChartBrands.length > 1 ? 16 : 24}
@@ -1397,7 +1399,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                   yAxisId="right"
                   type="monotone"
                   dataKey={`price__${b}`}
-                  name={`${b} — ${selectedPriceOption === 'discount' ? 'Average Discount' : 'Average Price'}`}
+                  name={`${toTitleCase(b)} — ${selectedPriceOption === 'discount' ? 'Average Discount' : 'Average Price'}`}
                   stroke={getBrandColor(brandColorMap, b, i).main}
                   strokeWidth={3}
                   strokeDasharray="5 4"
@@ -1416,7 +1418,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                       className="w-4 h-4 rounded-sm shadow-sm"
                       style={{ background: `linear-gradient(to top, ${getBrandColor(brandColorMap, b, i).dark}, ${getBrandColor(brandColorMap, b, i).main})` }}
                     ></div>
-                    <span className="text-zinc-300 text-sm font-medium">{b} — Offer Count</span>
+                    <span className="text-zinc-300 text-sm font-medium">{toTitleCase(b)} — Offer Count</span>
                     <div className="w-5 h-0 border-t-[3px] border-dashed" style={{ borderColor: getBrandColor(brandColorMap, b, i).main }}></div>
                     <span className="text-zinc-300 text-sm font-medium">
                       {selectedPriceOption === 'discount' ? 'Avg Discount' : 'Avg Price'}

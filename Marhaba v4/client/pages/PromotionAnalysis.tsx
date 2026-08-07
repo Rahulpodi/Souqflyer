@@ -36,7 +36,7 @@ import {
 } from '../utils/promotionAnalysisUtils';
 
 import { supabase } from '@/lib/supabaseClient';
-import { getCurrency } from '../utils/offerBankUtils';
+import { getCurrency, toTitleCase } from '../utils/offerBankUtils';
 
 // --- TYPES ---
 type DateRangeKey = 'latest4Weeks' | 'latest12Weeks' | 'ytd' | 'latest52Weeks';
@@ -96,6 +96,8 @@ const FILTER_PREFS_KEY = 'promotion_analysis_country_filters_v1';
 /** Max brands shown as separate mini charts in Overall when a category is applied (not Brand-on-Brand). */
 const OVERALL_CATEGORY_BRAND_CAP = 5;
 
+// Compared case-insensitively: the dimension source has changed casing before
+// ("Frozen Fries" -> "frozen fries") and an exact match emptied every dropdown.
 const ALLOWED_CATEGORIES = new Set([
   'Cereals & Bars', 'Cheese', 'Dental Care', 'Dishwash',
   'Facial Tissues & Wipes', 'Fresh Chicken', 'Frozen Chicken',
@@ -103,7 +105,10 @@ const ALLOWED_CATEGORIES = new Set([
   'Juices', 'Laptop & Accessories', 'Laundry', 'Malt Beverages',
   'Milk & Yogurt', 'Mobile & Accessories', 'Other',
   'Pasta & Noodles', 'Soft Drinks', 'Toilet Tissues & Papers', 'Water'
-]);
+].map((c) => c.toLowerCase()));
+
+const isAllowedCategory = (value: unknown): boolean =>
+  typeof value === 'string' && ALLOWED_CATEGORIES.has(value.trim().toLowerCase());
 
 type AnalyticsFilterSnapshot = {
   region: string;
@@ -224,7 +229,7 @@ const CustomFilterDropdown: FC<CustomDropdownProps> = ({
         className={`w-full bg-transparent text-left text-sm rounded-lg px-3 text-white transition-all appearance-none cursor-pointer flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed border ${highlightClass}`}
       >
         <span className="truncate pr-4">
-          {value || placeholder}
+          {toTitleCase(value) || placeholder}
         </span>
         <ChevronDown className="w-4 h-4 text-zinc-500 flex-shrink-0" />
       </button>
@@ -287,7 +292,7 @@ const CustomFilterDropdown: FC<CustomDropdownProps> = ({
                       : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
                   }`}
                 >
-                  <span>{opt}</span>
+                  <span>{toTitleCase(opt)}</span>
                   {isSelected && <Check className="h-3.5 w-3.5 text-purple-400" />}
                 </button>
               );
@@ -432,6 +437,14 @@ const PromotionAnalysis: FC = () => {
   const [exportAnalysisWeek, setExportAnalysisWeek] = useState<string>('latest12Weeks');
   const [exportOfferType, setExportOfferType] = useState<string>('Distinct Offers');
   const [exportAllData, setExportAllData] = useState<boolean>(false);
+  // Countries the export is scoped to. Empty = whatever country the page's
+  // applied filters already fetched.
+  const [exportCountries, setExportCountries] = useState<string[]>([]);
+  const [exportCountryRows, setExportCountryRows] = useState<any[]>([]);
+  const [isLoadingExportCountries, setIsLoadingExportCountries] = useState<boolean>(false);
+  const [isExportCountryOpen, setIsExportCountryOpen] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const exportCountryRef = useRef<HTMLDivElement>(null);
   const [showThreeDotsMenu, setShowThreeDotsMenu] = useState<boolean>(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isSpotlightActive, setIsSpotlightActive] = useState<boolean>(false);
@@ -928,7 +941,7 @@ const PromotionAnalysis: FC = () => {
             }
           });
 
-          setAllCategories(Array.from(categories).filter(c => ALLOWED_CATEGORIES.has(c)).sort());
+          setAllCategories(Array.from(categories).filter(isAllowedCategory).sort());
           setAllRegions(Array.from(regions).sort());
           setAllRetailers(Array.from(retailers).sort());
 
@@ -1083,7 +1096,7 @@ const PromotionAnalysis: FC = () => {
 
         const brands = Array.from(new Set(
           rows
-            .filter((r: any) => r.parent_category && ALLOWED_CATEGORIES.has(r.parent_category) && isCategoryPermitted(r.parent_category))
+            .filter((r: any) => r.parent_category && isAllowedCategory(r.parent_category) && isCategoryPermitted(r.parent_category))
             .map((r: any) => r.dimension_value)
             .filter(Boolean),
         )).sort() as string[];
@@ -1787,7 +1800,9 @@ const PromotionAnalysis: FC = () => {
   }, [activeTab, detailedDataFetched, isLoadingDetailedData, fetchRawDataForSubTabs, appliedMyBrand]);
 
   const filteredByExportFilters = useMemo(() => {
-    let list = processedData;
+    // Picking countries here replaces the page's country-scoped rows, so the
+    // preview table shows exactly what the download will contain.
+    let list = exportCountries.length > 0 ? exportCountryRows : processedData;
 
     // 1. Filter by Analysis Week (if exportAllData is not checked)
     if (!exportAllData && exportAnalysisWeek) {
@@ -1819,23 +1834,89 @@ const PromotionAnalysis: FC = () => {
       const dateB = getProductEffectiveDate(b)?.getTime() || 0;
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-  }, [processedData, exportAnalysisWeek, exportOfferType, exportAllData, dateRanges, sortOrder]);
+  }, [processedData, exportCountryRows, exportCountries, exportAnalysisWeek, exportOfferType, exportAllData, dateRanges, sortOrder]);
+
+  // Fetches the selected countries' rows once, and feeds both the preview table
+  // and the download. `processedData` is always scoped to the applied country,
+  // so a client-side filter cannot widen it.
+  useEffect(() => {
+    if (exportCountries.length === 0) {
+      setExportCountryRows([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setIsLoadingExportCountries(true);
+      const fromDate = new Date(Date.now() - 364 * 24 * 60 * 60 * 1000);
+      try {
+        const results = await Promise.all(
+          exportCountries.map(async (c) => {
+            const { data, error } = await supabase.rpc('get_flyer_products_detail', {
+              p_country: getCountryKey(c),
+              p_region: appliedRegion || null,
+              p_retailer: appliedRetailer || null,
+              p_category: appliedCategory || null,
+              p_subcategory: appliedSubCategory || null,
+              p_quantity: appliedQuantity || appliedBasePack || null,
+              p_from_date: formatDate(fromDate, 'yyyy-MM-dd'),
+              p_max_rows: 10000,
+            });
+            if (error) throw error;
+            const raw: any[] = Array.isArray(data) ? data : [];
+            return raw.length && raw[0]?.product ? raw.map((r: any) => r.product) : raw;
+          }),
+        );
+        if (!cancelled) setExportCountryRows(results.flat());
+      } catch (e) {
+        if (!cancelled) {
+          setExportCountryRows([]);
+          toast({ title: "Could not load countries", description: (e as Error).message, variant: "destructive" });
+        }
+      } finally {
+        if (!cancelled) setIsLoadingExportCountries(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [
+    JSON.stringify(exportCountries),
+    appliedRegion, appliedRetailer, appliedCategory,
+    appliedSubCategory, appliedQuantity, appliedBasePack,
+  ]);
+
+  // Close the country dropdown when clicking outside it.
+  useEffect(() => {
+    if (!isExportCountryOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (!exportCountryRef.current?.contains(e.target as Node)) setIsExportCountryOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [isExportCountryOpen]);
 
   const handleDownload = async () => {
-    const dataToExport = exportAllData ? processedData : filteredByExportFilters;
+    const sourceRows = exportCountries.length > 0 ? exportCountryRows : processedData;
+    const dataToExport: any[] = exportAllData ? sourceRows : filteredByExportFilters;
+
     if (dataToExport.length === 0) {
       toast({ title: "No data to export or data still loading", variant: "destructive" });
       return;
     }
+    setIsExporting(true);
     // Multi-sheet workbook built from the data_pivot template: fulldata plus the
     // five live PivotTables (Leaflet Share / DOP / Price Per KG / SKU / Pack).
     try {
+      const scope = exportCountries.length > 1
+        ? `${exportCountries.length}_countries`
+        : getCountryKey(exportCountries[0] || appliedCountry) || 'export';
       await downloadPivotWorkbook(
         dataToExport as any,
-        `promo_analysis_${new Date().toISOString().split('T')[0]}.xlsx`,
+        `promo_analysis_${scope}_${new Date().toISOString().split('T')[0]}.xlsx`,
       );
     } catch (e) {
       toast({ title: "Export failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -2069,7 +2150,7 @@ const PromotionAnalysis: FC = () => {
             <div className="relative group">
               <label className="absolute -top-2.5 left-3 px-2 text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-zinc-900 z-10 shadow-sm border border-purple-900/50 rounded-full">Primary Brand</label>
               <div className="w-full bg-zinc-950/50 border border-purple-900/30 text-zinc-400 font-bold text-sm rounded-lg px-4 py-3 cursor-not-allowed">
-                {myBrand || (!selectedCategory ? "← Select a category first" : "Select from top bar")}
+                {toTitleCase(myBrand) || (!selectedCategory ? "← Select a category first" : "Select from top bar")}
               </div>
             </div>
 
@@ -2087,14 +2168,14 @@ const PromotionAnalysis: FC = () => {
                   setIsCompetitorDropdownOpen((prev) => !prev);
                   setCompetitorSearchText('');
                 }}
-                title={selectedCompetitors.includes(ALL_COMPETITORS) ? 'All Competitors' : selectedCompetitors.join(', ')}
+                title={selectedCompetitors.includes(ALL_COMPETITORS) ? 'All Competitors' : selectedCompetitors.map(toTitleCase).join(', ')}
                 className="w-full bg-transparent border border-orange-900/30 text-white font-bold text-sm rounded-lg px-3 py-3 text-left hover:border-orange-500/50 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 disabled:opacity-50 transition-all appearance-none cursor-pointer shadow-[inset_0_2px_10px_rgba(234,88,12,0.02)] truncate pr-8"
               >
                 {!selectedCategory
                   ? '← Select a category first'
                   : selectedCompetitors.includes(ALL_COMPETITORS)
                     ? 'All Competitors'
-                    : selectedCompetitors.join(', ')}
+                    : selectedCompetitors.map(toTitleCase).join(', ')}
               </button>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500/50 pointer-events-none" />
               {isCompetitorDropdownOpen && !isLoadingFilters && (
@@ -2172,7 +2253,7 @@ const PromotionAnalysis: FC = () => {
                               : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
                           }`}
                         >
-                          <span>{brand}</span>
+                          <span>{toTitleCase(brand)}</span>
                           {isSelected && (
                             <Check className="h-3.5 w-3.5 text-orange-400" />
                           )}
@@ -2780,66 +2861,157 @@ const PromotionAnalysis: FC = () => {
               : 'border-zinc-800'
           }`}>
             
-            {/* Mocked / Local Filters for Export */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/80 mb-6">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Add On Pack Size</label>
-                <select className="bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
-                  <option value="All">All</option>
-                </select>
+            {/* Export scope controls. Every field shares one control style —
+                h-9, appearance-none + a matching ChevronDown — so nothing here
+                reads as a leftover native <select> next to a custom dropdown. */}
+            <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/80 mb-6 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Add On Pack Size</label>
+                  <div className="relative">
+                    <select className="w-full appearance-none bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg h-9 pl-2.5 pr-8 focus:outline-none focus:border-zinc-700 cursor-pointer transition-colors">
+                      <option value="All">All</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Add On Qty</label>
+                  <div className="relative">
+                    <select className="w-full appearance-none bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg h-9 pl-2.5 pr-8 focus:outline-none focus:border-zinc-700 cursor-pointer transition-colors">
+                      <option value="All">All</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Analysis Week</label>
+                  <div className="relative">
+                    <select
+                      value={exportAnalysisWeek}
+                      onChange={(e) => setExportAnalysisWeek(e.target.value)}
+                      className="w-full appearance-none bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg h-9 pl-2.5 pr-8 focus:outline-none focus:border-zinc-700 cursor-pointer transition-colors"
+                    >
+                      <option value="latest4Weeks">Latest 4 weeks</option>
+                      <option value="latest12Weeks">Latest 12 weeks</option>
+                      <option value="ytd">YTD</option>
+                      <option value="latest52Weeks">Latest 52 weeks</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5 relative" ref={exportCountryRef}>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Countries</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsExportCountryOpen((o) => !o)}
+                    className="flex items-center justify-between w-full bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg h-9 pl-2.5 pr-2.5 cursor-pointer hover:border-zinc-700 transition-colors"
+                  >
+                    <span className="truncate">
+                      {isLoadingExportCountries
+                        ? 'Loading…'
+                        : exportCountries.length === 0
+                          ? `${toTitleCase(appliedCountry) || 'Current'} only`
+                          : exportCountries.length === availableCountries.length
+                            ? 'All Countries'
+                            : exportCountries.map(toTitleCase).join(', ')}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0 ml-1" />
+                  </button>
+                  {isExportCountryOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/95 backdrop-blur-md shadow-2xl p-1.5">
+                      <div className="flex items-center justify-between px-2 pb-1.5 mb-1 border-b border-zinc-800/60">
+                        <button
+                          type="button"
+                          onClick={() => setExportCountries([...availableCountries])}
+                          className="text-[10px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExportCountries([])}
+                          className="text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div className="space-y-0.5 max-h-52 overflow-y-auto thin-scrollbar">
+                        {availableCountries.map((c) => {
+                          const isSelected = exportCountries.includes(c);
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() =>
+                                setExportCountries((prev) =>
+                                  isSelected ? prev.filter((x) => x !== c) : [...prev, c],
+                                )
+                              }
+                              className={`w-full px-3 py-1.5 text-left text-xs rounded-lg flex items-center justify-between transition-all ${
+                                isSelected
+                                  ? 'bg-purple-500/15 text-purple-400 font-semibold'
+                                  : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                              }`}
+                            >
+                              <span>{toTitleCase(c)}</span>
+                              {isSelected && <Check className="h-3.5 w-3.5 text-purple-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Add On Qty</label>
-                <select className="bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
-                  <option value="All">All</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Analysis Week</label>
-                <select 
-                  value={exportAnalysisWeek}
-                  onChange={(e) => setExportAnalysisWeek(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 text-zinc-350 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-                >
-                  <option value="latest4Weeks">Latest 4 weeks</option>
-                  <option value="latest12Weeks">Latest 12 weeks</option>
-                  <option value="ytd">YTD</option>
-                  <option value="latest52Weeks">Latest 52 weeks</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 mt-4">
-                <input 
-                  type="checkbox" 
-                  id="exportAllData" 
-                  checked={exportAllData} 
-                  onChange={(e) => setExportAllData(e.target.checked)}
-                  className="rounded bg-zinc-900 border-zinc-850 text-purple-650 focus:ring-purple-650 h-4 w-4" 
-                />
-                <label htmlFor="exportAllData" className="text-xs text-zinc-400 font-semibold cursor-pointer select-none">Export All Data</label>
-              </div>
-              <div className="flex items-center bg-zinc-950 p-1 rounded-lg border border-zinc-850 md:col-span-2 mt-4 self-center justify-self-end">
-                <button
-                  onClick={() => setExportOfferType('Distinct Offers')}
-                  className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                    exportOfferType === 'Distinct Offers' && !exportAllData
-                      ? 'bg-purple-600 text-white shadow-sm font-semibold'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                  disabled={exportAllData}
-                >
-                  Distinct Offers
-                </button>
-                <button
-                  onClick={() => setExportOfferType('All Offers')}
-                  className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                    exportOfferType === 'All Offers' || exportAllData
-                      ? 'bg-purple-600 text-white shadow-sm font-semibold'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                  disabled={exportAllData}
-                >
-                  All Offers
-                </button>
+
+              {/* Both live in a shared row so it reads as one "how the export is
+                  sliced" control instead of two disconnected fragments. */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+                <div className="flex items-center bg-zinc-950 p-1 rounded-lg border border-zinc-850">
+                  <button
+                    onClick={() => setExportOfferType('Distinct Offers')}
+                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                      exportOfferType === 'Distinct Offers' && !exportAllData
+                        ? 'bg-gradient-to-r from-purple-600 to-orange-500 text-white shadow-md font-semibold'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                    disabled={exportAllData}
+                  >
+                    Distinct Offers
+                  </button>
+                  <button
+                    onClick={() => setExportOfferType('All Offers')}
+                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                      exportOfferType === 'All Offers' || exportAllData
+                        ? 'bg-gradient-to-r from-purple-600 to-orange-500 text-white shadow-md font-semibold'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                    disabled={exportAllData}
+                  >
+                    All Offers
+                  </button>
+                </div>
+
+                <label htmlFor="exportAllData" className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Export All Data</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    id="exportAllData"
+                    aria-checked={exportAllData}
+                    onClick={() => setExportAllData(!exportAllData)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      exportAllData ? 'bg-gradient-to-r from-purple-600 to-orange-500' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition ${
+                        exportAllData ? 'translate-x-[18px]' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </label>
               </div>
             </div>
 
@@ -2857,7 +3029,8 @@ const PromotionAnalysis: FC = () => {
                   {isLoadingDetailedData ? (
                     "Fetching filtered rows..."
                   ) : (
-                    `Showing ${filteredByExportFilters.length.toLocaleString()} raw records matching selected filters (limited to 5,000 to prevent crashing).`
+                    // The fetch cap is 10,000 rows, not 5,000 — the old copy understated it.
+                    `Showing ${filteredByExportFilters.length.toLocaleString()} raw records matching selected filters${exportCountries.length > 0 ? ` across ${exportCountries.length} ${exportCountries.length === 1 ? 'country' : 'countries'}` : ''} (capped at 10,000 rows per country).`
                   )}
                 </p>
               </div>
@@ -2873,11 +3046,11 @@ const PromotionAnalysis: FC = () => {
                 
                 <button
                   onClick={handleDownload}
-                  disabled={filteredByExportFilters.length === 0 || isLoading || isLoadingDetailedData}
+                  disabled={filteredByExportFilters.length === 0 || isLoading || isLoadingDetailedData || isExporting || isLoadingExportCountries}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-orange-500 shadow-md transition-all hover:scale-[1.02] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed border border-white/10"
                 >
-                  <Download className="h-4 w-4" />
-                  Download Excel
+                  {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {isExporting ? 'Preparing…' : 'Download Excel'}
                 </button>
 
                 {/* Three dots dropdown */}
@@ -2948,7 +3121,7 @@ const PromotionAnalysis: FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto no-scrollbar rounded-lg border border-zinc-800">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto thin-scrollbar rounded-lg border border-zinc-800">
               <table className="w-full text-left border-collapse min-w-[1000px] text-xs">
                 <thead className="bg-zinc-900/90 backdrop-blur text-zinc-300 font-semibold sticky top-0 z-10 shadow-sm border-b border-zinc-800">
                   <tr>
@@ -2984,7 +3157,7 @@ const PromotionAnalysis: FC = () => {
                         </td>
                         <td className="px-4 py-3.5">
                           <span className="px-2.5 py-0.5 rounded text-[11px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50">
-                            {item.mart_name || 'N/A'}
+                            {toTitleCase(item.mart_name) || 'N/A'}
                           </span>
                         </td>
                         <td className="px-4 py-3.5 font-mono text-zinc-300">
@@ -2996,7 +3169,7 @@ const PromotionAnalysis: FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-zinc-200 font-semibold truncate max-w-[350px]" title={item.offer_name || ''}>
-                          {item.offer_name || 'N/A'}
+                          {toTitleCase(item.offer_name) || 'N/A'}
                         </td>
                         <td className="px-4 py-3.5 text-right font-mono text-zinc-400 text-[11px] tracking-tight">
                           {formatTimelineDisplay(item.start_date, item.end_date)}

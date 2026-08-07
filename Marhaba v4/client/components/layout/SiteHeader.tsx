@@ -70,18 +70,20 @@ export default function SiteHeader() {
               </nav>
             )}
 
+            {/* Theme toggle has no auth dependency — pulled out of the
+                `user &&` block below so it's reachable on Login/OTP too,
+                the pages where switching theme matters most before sign-in. */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle light/dark theme"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-white/20 text-zinc-300 hover:bg-white/10 hover:text-white transition-all shadow-sm"
+            >
+              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </button>
+
             {/* [MODIFIED] Replaced Profile + Logout with a Dropdown Menu */}
             {user && (
               <div className="flex items-center border-l border-white/20 pl-6 gap-3">
-                {/* Theme Toggle Button */}
-                <button
-                  onClick={toggleTheme}
-                  aria-label="Toggle light/dark theme"
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-white/20 text-zinc-300 hover:bg-white/10 hover:text-white transition-all shadow-sm"
-                >
-                  {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                </button>
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

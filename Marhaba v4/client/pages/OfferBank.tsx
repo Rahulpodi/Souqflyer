@@ -1530,7 +1530,7 @@ useEffect(() => {
                 const isSelected = !!selectedBrands[b];
                 return (
                   <button key={b} onClick={() => setSelectedBrands((s) => ({ ...s, [b]: !isSelected }))} className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center justify-between transition-colors ${isSelected ? "bg-white text-black font-medium" : "hover:bg-white/10"}`}>
-                    <span className="truncate">{b}</span>
+                    <span className="truncate">{toTitleCase(b)}</span>
                     {isSelected && <CheckCircle className="h-4 w-4 text-black" />}
                   </button>
                 );
@@ -1562,7 +1562,7 @@ useEffect(() => {
                 const isSelected = selectedPacks.includes(p);
                 return (
                   <button key={p} onClick={() => setSelectedPacks((prev) => isSelected ? prev.filter((item) => item !== p) : [...prev, p])} className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center justify-between transition-colors ${isSelected ? "bg-white text-black font-medium" : "hover:bg-white/10"}`}>
-                    <span className="truncate">{p}</span>
+                    <span className="truncate">{toTitleCase(p)}</span>
                     {isSelected && <CheckCircle className="h-4 w-4 text-black" />}
                   </button>
                 )
@@ -1702,7 +1702,7 @@ useEffect(() => {
                     <button type="button" disabled={isLoadingRetailers || !country} className="flex h-9 items-center justify-between w-full min-w-0 rounded-md border border-white/30 bg-white/5 px-3 text-sm text-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                       <div className="flex items-center gap-2 min-w-0">
                         <Building2 className="h-4 w-4 text-gray-300 flex-shrink-0" />
-                        <span className="truncate">{retailerLabel}</span>
+                        <span className="truncate">{toTitleCase(retailerLabel)}</span>
                         {isLoadingRetailers && <Loader2 className="h-3.5 w-3.5 text-purple-400 animate-spin flex-shrink-0" />}
                       </div>
                       <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -1729,7 +1729,7 @@ useEffect(() => {
                             return (
                               <button key={r} onClick={() => { setRetailers((prev) => isSelected ? prev.filter((item) => item !== r) : [...prev, r]);  setSubCategory("all"); }}
                                 className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center justify-between transition-colors ${isSelected ? "bg-white text-black font-medium" : "hover:bg-white/10"}`}>
-                                <span className="truncate">{r}</span>
+                                <span className="truncate">{toTitleCase(r)}</span>
                                 {isSelected && <CheckCircle className="h-4 w-4 text-black" />}
                               </button>
                             );
@@ -1768,7 +1768,7 @@ useEffect(() => {
     >
       <div className="flex items-center gap-2 min-w-0">
         <LayoutGrid className="h-4 w-4 text-gray-300 flex-shrink-0" />
-        <span className="truncate">{categoryLabel}</span>
+        <span className="truncate">{toTitleCase(categoryLabel)}</span>
         {/* A spinning chevron read as a second dropdown arrow — use the spinner. */}
         {isLoadingCategories && <Loader2 className="h-3.5 w-3.5 text-purple-400 animate-spin flex-shrink-0" />}
       </div>
@@ -1842,7 +1842,7 @@ useEffect(() => {
                 : "hover:bg-white/10"
             }`}
           >
-            <span className="truncate">{c}</span>
+            <span className="truncate">{toTitleCase(c)}</span>
             {isSelected && <CheckCircle className="h-4 w-4 text-black" />}
           </button>
         );
@@ -2019,7 +2019,7 @@ useEffect(() => {
                             <th scope="col" className="px-4 py-3 text-left w-32 border-b border-white/10 whitespace-nowrap">Promo Mechanic</th>
                             <th scope="col" className="px-4 py-3 text-left w-24 border-b border-white/10 whitespace-nowrap">Promo Qty</th>
                             <th scope="col" className="px-4 py-3 text-left w-32 border-b border-white/10 whitespace-nowrap">Offer Image ID</th>
-                            <th scope="col" className="px-4 py-3 text-center w-28 border-b border-white/10 whitespace-nowrap">Actions</th>
+                            <th scope="col" className="px-4 py-3 text-center w-28 border-b border-white/10 whitespace-nowrap">Offer Image</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10">
@@ -2034,15 +2034,15 @@ useEffect(() => {
                                 <td className="px-4 py-3 text-center align-middle text-gray-400">{(page - 1) * ITEMS_PER_PAGE + idx + 1}</td>
                                 <td className="px-4 py-3 align-middle"><div className="flex justify-center"><img src={o.image || '/placeholder.svg'} alt={o.title} className="h-10 w-10 object-contain rounded bg-white p-0.5" /></div></td>
                                 <td className="px-4 py-3 align-middle font-medium text-white whitespace-nowrap">{toTitleCase(o.country)}</td>
-                                <td className="px-4 py-3 align-middle font-medium text-white whitespace-normal">{o.title}</td>
+                                <td className="px-4 py-3 align-middle font-medium text-white whitespace-normal">{toTitleCase(o.title)}</td>
                                 <td className="px-4 py-3 align-middle whitespace-nowrap">
-                                  <RetailerLogo name={o.retailer} />
+                                  <RetailerLogo name={toTitleCase(o.retailer)} />
                                 </td>
                                 <td className="px-4 py-3 align-middle text-right text-gray-400 whitespace-nowrap">{o.original > 0 ? `${currencySymbol} ${o.original}` : '-'}</td>
                                 <td className="px-4 py-3 align-middle text-right font-bold text-green-400 whitespace-nowrap">{currencySymbol} {o.price}</td>
                                 <td className="px-4 py-3 align-middle text-gray-300 whitespace-nowrap">{o.packSize}</td>
                                 <td className="px-4 py-3 align-middle text-gray-300 whitespace-nowrap">{toTitleCase(o.productType)}</td>
-                                <td className="px-4 py-3 align-middle text-gray-300 whitespace-nowrap">{o.brand}</td>
+                                <td className="px-4 py-3 align-middle text-gray-300 whitespace-nowrap">{toTitleCase(o.brand)}</td>
                                 <td className="px-4 py-3 align-middle text-xs text-gray-400 leading-tight whitespace-normal">{formatOfferTimeline(o.startDate, o.endDate, o.valid)}</td>
                                 <td className="px-4 py-3 align-middle text-gray-400 whitespace-nowrap">Special Offer</td>
                                 <td className="px-4 py-3 align-middle text-gray-400 text-center">-</td>

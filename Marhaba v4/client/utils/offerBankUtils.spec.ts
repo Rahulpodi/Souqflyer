@@ -176,5 +176,13 @@ describe("Offer Bank Utility Helpers", () => {
       expect(toTitleCase("UAE")).toBe("UAE");
       expect(toTitleCase(null)).toBe("");
     });
+
+    it("normalises shouty source data but keeps short acronyms", () => {
+      expect(toTitleCase("LULU HYPERMARKET")).toBe("Lulu Hypermarket");
+      expect(toTitleCase("al madina  hypermarket")).toBe("Al Madina  Hypermarket");
+      expect(toTitleCase("KSA")).toBe("KSA");
+      expect(toTitleCase("N/A")).toBe("N/A");
+      expect(toTitleCase("McCain")).toBe("Mccain");
+    });
   });
 });

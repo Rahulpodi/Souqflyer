@@ -36,7 +36,7 @@ import {
 // --- SUPABASE CLIENT ---
 import { supabase } from '@/lib/supabaseClient';
 import { buildBrandColorMap, getBrandColor } from '@/utils/brandColors';
-import { getCurrency } from '../utils/offerBankUtils';
+import { getCurrency, toTitleCase } from '../utils/offerBankUtils';
 // --- Types ---
 export interface FlyerProduct {
   id: number;
@@ -123,15 +123,8 @@ const getWeightInUnits = (weightStr: string | null): number => {
   return 0;
 };
 // --- NEW HELPERS ---
-const formatTitleCase = (str: string | null | undefined): string => {
-  if (!str) return '';
-  return str
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
+// Casing lives in offerBankUtils.toTitleCase — one rule for the whole site.
+const formatTitleCase = toTitleCase;
 
 const formatWeekLabel = (key: string | null | undefined): string => {
   try {

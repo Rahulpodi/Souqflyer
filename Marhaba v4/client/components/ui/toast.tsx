@@ -27,12 +27,12 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        // Popups are monochrome site-wide — no red/colour accents. The
+        // Popups are monochrome site-wide — no red/colour accents, and the
+        // edge uses the shared --border gray like every other surface. The
         // "destructive" variant is kept so existing call sites keep working;
         // it just reads as a higher-contrast inverted surface.
-        default: "border-2 border-foreground bg-background text-foreground",
-        destructive:
-          "destructive group border-2 border-foreground bg-foreground text-background",
+        default: "border-border bg-popover text-popover-foreground",
+        destructive: "destructive group border-border bg-foreground text-background",
       },
     },
     defaultVariants: {
@@ -44,7 +44,7 @@ const toastVariants = cva(
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-  VariantProps<typeof toastVariants>
+    VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
   return (
     <ToastPrimitives.Root

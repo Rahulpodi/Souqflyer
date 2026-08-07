@@ -105,9 +105,11 @@ export const toFullDataRow = (r: ExportRow): Record<string, string | number> => 
     brand: r.brand ?? "",
     Variant: "",
     retailer_desc: r.product_name ?? "",
-    price: promo || "",
-    pricperkg: kg > 0 && promo > 0 ? Number((promo / kg).toFixed(4)) : "",
-    discounted_from: regular || "",
+    // Two decimals throughout — the pivots average these, and a 15-digit
+    // price per kg made every summary cell unreadable.
+    price: promo ? Number(promo.toFixed(2)) : "",
+    pricperkg: kg > 0 && promo > 0 ? Number((promo / kg).toFixed(2)) : "",
+    discounted_from: regular ? Number(regular.toFixed(2)) : "",
     // Both prices must be present — a missing promo price is not a 100% discount.
     discount_percentage:
       promo > 0 && regular > promo ? Number((((regular - promo) / regular) * 100).toFixed(2)) : "",
