@@ -792,7 +792,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
         <>
             <div className="space-y-6">
                 {/* --- Chart Section (Average Offer Price) --- */}
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-8">
+                <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-8">
                     <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                         <div className="flex flex-wrap items-center gap-6">
                             <h2 className="text-lg font-semibold text-white">{isDistributionView ? 'Distribution Price Points' : 'Average Offer Price'}</h2>
@@ -882,7 +882,7 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                           <span>Average: {getValueLabel(averagePrice)}</span>
                         </div>
                       )}
-                      <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700 pb-4">
+                      <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700 pb-4 chart-scroll-wide">
                         <div 
                           className="h-[360px] relative"
                           style={
@@ -1039,9 +1039,10 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                             </ResponsiveContainer>
                           ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart 
-                                data={competitorChartData} 
+                              <BarChart
+                                data={competitorChartData}
                                 margin={{ top: 30, right: 30, left: 10, bottom: 20 }}
+                                barCategoryGap="35%"
                               >
                                 <defs>
                                   <linearGradient id="barGradPurple" x1="0" y1="0" x2="0" y2="1">
@@ -1206,10 +1207,10 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
                     )}
                 </div>
 
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-6">
+                <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6">
                     <h2 className="text-lg font-semibold text-white mb-4">Brand Summary</h2>
                     <div className="overflow-x-auto max-h-96 scrollbar-thin scrollbar-thumb-zinc-700">
-                        <table className="w-full text-sm border-collapse">
+                        <table className="w-full min-w-[420px] text-sm border-collapse">
                             <thead>
                                 <tr className="bg-zinc-800/40 border-b border-zinc-800/80">
                                     <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Brand Name</th>
@@ -1312,11 +1313,14 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
             <LoadingSpinner />
         </div>
     ) : retailerActivity.length > 0 ? (
-        <div className="w-full h-[400px] relative">
+        <div className="w-full">
+        <div className="w-full h-[400px] relative overflow-x-auto thin-scrollbar chart-scroll">
+          <div style={{ minWidth: Math.max(500, retailerActivity.length * Math.max(70, selectedChartBrands.length * 34)), height: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart 
-              data={retailerActivity} 
+            <ComposedChart
+              data={retailerActivity}
               margin={{ top: 30, right: 60, left: 30, bottom: 20 }}
+              barCategoryGap="30%"
             >
               <defs>
                 {/* One gradient per selected brand so each bar matches that
@@ -1410,7 +1414,9 @@ const CompetitorPricingAnalysis: FC<CompetitorPricingAnalysisProps> = ({
               ))}
             </ComposedChart>
           </ResponsiveContainer>
-          
+          </div>
+        </div>
+
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mt-6 border-t border-zinc-800/50 pt-4">
               {selectedChartBrands.map((b, i) => (
                 <div key={b} className="flex items-center gap-3">

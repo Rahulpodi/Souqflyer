@@ -620,7 +620,7 @@ const timeFilteredProducts = useMemo(() => {
                <label htmlFor="myBrandOnly" className="text-xs text-gray-400 cursor-pointer select-none">My Brand Summary</label>
             </div>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar relative">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar relative chart-scroll">
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 z-10 h-[300px]">
                 <div className="flex flex-col items-center gap-2">
@@ -716,7 +716,7 @@ const timeFilteredProducts = useMemo(() => {
                 </button>
              </div>
           </div>
-          <div className="flex-1 min-h-0 overflow-auto pr-2 custom-scrollbar relative">
+          <div className="flex-1 min-h-0 overflow-auto pr-2 custom-scrollbar relative chart-scroll-wide">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 z-10 h-[300px]">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />

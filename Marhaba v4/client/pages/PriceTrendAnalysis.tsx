@@ -258,7 +258,7 @@ const TrendLineChart = ({
   }
 
   return (
-    <div style={{ height: `${height}px` }} className="w-full relative">
+    <div style={{ height: `${height}px` }} className="w-full relative chart-scroll-wide">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -807,25 +807,25 @@ const PriceTrendAnalysis = ({
         {/* Date Pickers (Custom Period ON) */}
         {isCustomPeriod && (
           <div className="pt-3 flex flex-wrap justify-between items-center gap-4 animate-in slide-in-from-top-2 border-t border-zinc-800">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <span className="text-xs text-zinc-500 font-semibold uppercase">Time Period 1:</span>
-              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-[145px]">
+              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                 <input type="date" value={p1Start} onChange={(e) => setP1Start(e.target.value)} className="bg-transparent text-xs text-gray-200 font-mono focus:outline-none w-full cursor-pointer relative z-10" />
                 <CalendarIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none z-0" />
               </div>
-              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-[145px]">
+              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                 <input type="date" value={p1End} onChange={(e) => setP1End(e.target.value)} className="bg-transparent text-xs text-gray-200 font-mono focus:outline-none w-full cursor-pointer relative z-10" />
                 <CalendarIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none z-0" />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <span className="text-xs text-zinc-500 font-semibold uppercase">Time Period 2:</span>
-              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-[145px]">
+              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                 <input type="date" value={p2Start} onChange={(e) => setP2Start(e.target.value)} className="bg-transparent text-xs text-gray-200 font-mono focus:outline-none w-full cursor-pointer relative z-10" />
                 <CalendarIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none z-0" />
               </div>
-              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-[145px]">
+              <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                 <input type="date" value={p2End} onChange={(e) => setP2End(e.target.value)} className="bg-transparent text-xs text-gray-200 font-mono focus:outline-none w-full cursor-pointer relative z-10" />
                 <CalendarIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none z-0" />
               </div>
@@ -837,7 +837,7 @@ const PriceTrendAnalysis = ({
       <div className="space-y-6">
         {/* SECTION 1: BAR CHART (Only when Custom Period is OFF) */}
         {!isCustomPeriod && (
-          <section className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-lg p-6">
+          <section className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-lg p-4 sm:p-6">
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h3 className="text-lg font-semibold text-white">
                 Average {metric === 'Discount' ? 'Discount (%)' : metric}
@@ -851,12 +851,17 @@ const PriceTrendAnalysis = ({
                 ))}
               </div>
             </div>
-            <div className="h-[250px] w-full">
+            {/* Fixed barSize means 4 bars per brand can only get this wide before
+                they overlap and their value labels turn to mush — give each
+                brand group a guaranteed width and let the surplus scroll
+                instead of crushing bars on narrow screens. */}
+            <div className="h-[250px] w-full overflow-x-auto thin-scrollbar chart-scroll-wide">
+              <div style={{ minWidth: Math.max(320, barChartData.length * 150), height: '100%' }}>
               {isLoading ? (
                 <LoadingState height="h-full" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barChartData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }} barGap={6}>
+                  <BarChart data={barChartData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }} barGap={10} barCategoryGap="25%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
                     <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                     <YAxis
@@ -910,6 +915,7 @@ const PriceTrendAnalysis = ({
                   </BarChart>
                 </ResponsiveContainer>
               )}
+              </div>
             </div>
           </section>
         )}
@@ -1091,7 +1097,7 @@ const PriceTrendAnalysis = ({
 
               {/* Offer Date range picker */}
               <div className="flex items-center gap-2">
-                <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 w-[145px]">
+                <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                   <input
                     type="date"
                     value={tableStartDate}
@@ -1101,7 +1107,7 @@ const PriceTrendAnalysis = ({
                   <CalendarIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none z-0" />
                 </div>
                 <span className="text-zinc-600 text-xs">-</span>
-                <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 w-[145px]">
+                <div className="relative flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 w-full sm:w-[145px] min-w-[130px] flex-1 sm:flex-none">
                   <input
                     type="date"
                     value={tableEndDate}

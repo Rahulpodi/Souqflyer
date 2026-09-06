@@ -194,6 +194,11 @@ export const buildFullDataSheet = (
 /**
  * Points the pivot cache at the new row range and marks it stale, so Excel
  * refreshes every pivot the moment the file is opened.
+ *
+ * `missingItemsLimit="0"` is Excel's "number of items to retain per field:
+ * None". Without it Excel keeps every value the template's cache was built
+ * with, so the Year and Month filter dropdowns listed 2025 and months 1-5
+ * even when the exported rows contained none of them.
  */
 export const patchCacheDefinition = (xml: string, rowCount: number): string =>
   xml
@@ -202,8 +207,12 @@ export const patchCacheDefinition = (xml: string, rowCount: number): string =>
       `<worksheetSource ref="A1:${colName(CACHE_FIELD_COUNT - 1)}${rowCount + 1}" sheet="fulldata"/>`,
     )
     .replace(/ refreshOnLoad="[^"]*"/, "")
+    .replace(/ missingItemsLimit="[^"]*"/, "")
     .replace(/ recordCount="[^"]*"/, ' recordCount="0"')
-    .replace("<pivotCacheDefinition ", '<pivotCacheDefinition refreshOnLoad="1" ');
+    .replace(
+      "<pivotCacheDefinition ",
+      '<pivotCacheDefinition refreshOnLoad="1" missingItemsLimit="0" ',
+    );
 
 const TEMPLATE_URL = "/pivot-template.xlsx";
 

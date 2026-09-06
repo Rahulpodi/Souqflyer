@@ -9,7 +9,11 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      // Mobile-first: a flat 2rem spent 64px of a 390px phone screen on padding
+      // before any nested panel added its own. Bumped back to 2rem at lg in
+      // global.css — the breakpoint form of this option generates nothing while
+      // container.screens below is overridden.
+      padding: "1rem",
       screens: {
         "2xl": "1400px",
       },

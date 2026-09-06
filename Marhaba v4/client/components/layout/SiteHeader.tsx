@@ -50,17 +50,19 @@ export default function SiteHeader() {
   return (
     <TooltipProvider>
       <header className="relative w-full bg-black/30 backdrop-blur-lg">
-        <div className="container flex h-28 items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img src={logo} alt="Marhaba AI Logo" className="h-24 w-auto" />
+        <div className="container flex h-16 sm:h-20 md:h-28 items-center justify-between gap-2">
+          {/* Logo — flex-shrink-0 so it can't be squeezed to a sliver when
+              the nav links + icons don't all fit a narrow screen. */}
+          <Link to="/" className="flex items-center flex-shrink-0">
+            <img src={logo} alt="Marhaba AI Logo" className="h-12 sm:h-16 md:h-24 w-auto" />
           </Link>
 
           {/* Right Side */}
-          <div className="flex items-center gap-x-6">
-            {/* Nav Links */}
+          <div className="flex items-center gap-x-2 sm:gap-x-6 flex-shrink-0">
+            {/* Nav Links — hidden below sm, folded into the user menu instead
+                so they don't fight the logo for width on phones. */}
             {showNavLinks && (
-              <nav className="flex items-center gap-x-2">
+              <nav className="hidden sm:flex items-center gap-x-2">
                 <NavLink to="/offer-bank" className={getNavLinkClass}>
                   Offer Index
                 </NavLink>
@@ -76,7 +78,7 @@ export default function SiteHeader() {
             <button
               onClick={toggleTheme}
               aria-label="Toggle light/dark theme"
-              className="flex h-10 w-10 items-center justify-center rounded-md border border-white/20 text-zinc-300 hover:bg-white/10 hover:text-white transition-all shadow-sm"
+              className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-md border border-white/20 text-zinc-300 hover:bg-white/10 hover:text-white transition-all shadow-sm"
             >
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </button>
@@ -109,6 +111,19 @@ export default function SiteHeader() {
                         </div>
                       </div>
                     </DropdownMenuLabel>
+                    {/* Nav links, mobile-only: sm:hidden mirrors the `hidden
+                        sm:flex` nav bar above so links aren't offered twice. */}
+                    {showNavLinks && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/20 sm:hidden" />
+                        <DropdownMenuItem asChild className="sm:hidden cursor-pointer">
+                          <Link to="/offer-bank">Offer Index</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="sm:hidden cursor-pointer">
+                          <Link to="/promotion-analysis">Promo Analysis</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator className="bg-white/20" />
                     <DropdownMenuItem
                       onClick={handleLogout}

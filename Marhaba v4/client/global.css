@@ -635,3 +635,42 @@
 }
 .thin-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(113, 113, 122, 0.7); }
 .thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(113, 113, 122, 0.45) transparent; }
+
+/* Fully hidden scrollbar for horizontal swipe strips (mobile tab bars) where
+   a visible track would look like a stray line rather than a scroll hint. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Charts on phones.
+   Recharts' ResponsiveContainer always fits its parent, so the overflow-x-auto
+   wrappers around these charts had nothing to scroll — the chart just squeezed
+   until axis labels and bars were unreadable. Giving the chart a real minimum
+   width below the sm breakpoint makes those wrappers work as intended: the
+   chart keeps a legible size and the user swipes sideways instead.
+   Opt-in via .chart-scroll so the small in-card charts stay fluid. */
+@media (max-width: 640px) {
+  .chart-scroll,
+  .chart-scroll-wide {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* !important is required: ResponsiveContainer writes `min-width: 0px` as an
+     inline style, which otherwise beats any stylesheet rule. */
+  .chart-scroll .recharts-responsive-container {
+    min-width: 560px !important;
+  }
+  /* Denser charts (many brands or weeks side by side) need more room. */
+  .chart-scroll-wide .recharts-responsive-container {
+    min-width: 760px !important;
+  }
+}
+
+/* Restores the original desktop container gutter. Tailwind's responsive
+   `container.padding` generates nothing here because container.screens is
+   overridden to a single breakpoint, so it lives in plain CSS. */
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}

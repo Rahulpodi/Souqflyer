@@ -22,7 +22,7 @@ import {
   getISOWeek
 } from 'date-fns';
 import { downloadPivotWorkbook } from '../utils/dataExportWorkbook';
-import { Download, Info, Loader2, ChevronDown, Check, Search, X, MoreHorizontal, Sparkles, Lightbulb, ArrowUpDown, Table } from 'lucide-react';
+import { Download, Info, Loader2, ChevronDown, Check, Search, X, MoreHorizontal, Sparkles, Lightbulb, ArrowUpDown, Table, SlidersHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CompetitorPricingAnalysis from './CompetitorPricingAnalysis';
 import { buildBrandColorMap, getBrandColor } from '@/utils/brandColors';
@@ -574,6 +574,16 @@ const PromotionAnalysis: FC = () => {
     (cat: string) => permittedCategories.length === 0 || permittedCategories.includes(cat.trim().toLowerCase()),
     [permittedCategories],
   );
+
+  // Only one category to choose from — pick it automatically so the user can
+  // go straight to picking a brand instead of clicking through a dropdown
+  // that has nothing to decide.
+  useEffect(() => {
+    const permitted = allCategories.filter(isCategoryPermitted);
+    if (permitted.length === 1 && !selectedCategory) {
+      setSelectedCategory(permitted[0]);
+    }
+  }, [allCategories, isCategoryPermitted]);
   // Change type to Partial<FlyerProduct> or any[] to allow product details
 
   const [appliedOfferType, setAppliedOfferType] = useState(() => sessionStorage.getItem("promoanalysis_appliedOfferType") || "All Offers");
@@ -584,6 +594,10 @@ const PromotionAnalysis: FC = () => {
     return sessionStorage.getItem("promoanalysis_appliedCategory") || "";
   });
   const [showSelectedCompetitorBreakdown, setShowSelectedCompetitorBreakdown] = useState(false);
+  // Mobile only: the 10-field filter grid stays collapsed behind a tap
+  // instead of pushing the whole page down on every load — desktop keeps
+  // it always open since there's room for it.
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   // --- ADD THESE NEW APPLIED STATES ---
   const [appliedRetailer, setAppliedRetailer] = useState(() => sessionStorage.getItem("promoanalysis_appliedRetailer") || "");
@@ -2099,8 +2113,22 @@ const PromotionAnalysis: FC = () => {
         </div>
 
         {/* FILTERS */}
-        <div className="p-4 md:p-6 bg-zinc-900/40 border-b border-zinc-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-6">
+        <div className="p-3 sm:p-4 md:p-6 bg-zinc-900/40 border-b border-zinc-800">
+          {/* Mobile-only toggle — a real app doesn't open on a page-length
+              form; tap to reveal it, tap Apply and it gets out of the way. */}
+          <button
+            type="button"
+            onClick={() => setShowMoreFilters((v) => !v)}
+            className="sm:hidden w-full flex items-center justify-between h-10 px-3 mb-3 rounded-md border border-white/20 bg-white/5 text-sm font-medium text-white"
+          >
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-purple-400" />
+              More Filters
+            </span>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${showMoreFilters ? 'rotate-180' : ''}`} />
+          </button>
+
+          <div className={`${showMoreFilters ? 'grid' : 'hidden'} sm:grid grid-cols-2 lg:grid-cols-4 gap-x-3 sm:gap-x-5 gap-y-4 sm:gap-y-6`}>
 
             {/* Row 1 */}
             <CustomFilterDropdown
@@ -2314,7 +2342,7 @@ const PromotionAnalysis: FC = () => {
             {/* Apply Button */}
             <div className="flex justify-end items-end h-full">
               <button
-                onClick={handleApplyFilters}
+                onClick={() => { handleApplyFilters(); setShowMoreFilters(false); }}
                 disabled={isLoading || isLoadingFilters || !selectedCategory || !myBrand}
                 className="w-full h-full min-h-[46px] flex items-center justify-center rounded-lg font-bold text-white tracking-widest uppercase text-xs bg-gradient-to-r from-purple-600 to-orange-500 shadow-[0_0_15px_rgba(147,51,234,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:grayscale disabled:hover:scale-100 disabled:cursor-not-allowed border border-white/20"
               >
@@ -2325,14 +2353,15 @@ const PromotionAnalysis: FC = () => {
           </div>
         </div>
 
-        {/* TABS */}
+        {/* TABS — horizontal scroll on mobile instead of wrapping to a ragged
+            second line; flex-shrink-0 keeps each label from squishing. */}
         <div className="border-t border-zinc-800 px-4 md:px-6">
-          <div className="flex flex-wrap gap-6">
-            <button onClick={() => setActiveTab('overall')} className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'overall' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Overall Summary</button>
-            <button onClick={() => setActiveTab('competitor')} className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'competitor' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Competitor Pricing Analysis</button>
-            <button onClick={() => setActiveTab('allBrand')} className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'allBrand' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>All Brand Activities</button>
-            <button onClick={() => setActiveTab('priceTrend')} className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'priceTrend' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Price Trend Analysis</button>
-            <button onClick={() => setActiveTab('export')} className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'export' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Data Export</button>
+          <div className="flex gap-6 overflow-x-auto no-scrollbar">
+            <button onClick={() => setActiveTab('overall')} className={`flex-shrink-0 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'overall' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Overall Summary</button>
+            <button onClick={() => setActiveTab('competitor')} className={`flex-shrink-0 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'competitor' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Competitor Pricing Analysis</button>
+            <button onClick={() => setActiveTab('allBrand')} className={`flex-shrink-0 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'allBrand' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>All Brand Activities</button>
+            <button onClick={() => setActiveTab('priceTrend')} className={`flex-shrink-0 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'priceTrend' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Price Trend Analysis</button>
+            <button onClick={() => setActiveTab('export')} className={`flex-shrink-0 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'export' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400 hover:text-white'}`}>Data Export</button>
           </div>
         </div>
       </div>
@@ -2343,7 +2372,7 @@ const PromotionAnalysis: FC = () => {
 
       {activeTab === 'overall' && analyticsData && displayData && (
         <div className="space-y-6">
-          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-8 mb-6">
+          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-8 mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
               <h2 className="text-lg font-semibold text-white">{activityTitle}</h2>
               {/* Toggle Button */}
@@ -2491,7 +2520,7 @@ const PromotionAnalysis: FC = () => {
                         </div>
                       </div>
                       <div className="overflow-x-auto rounded-lg border border-zinc-800">
-                        <table className="w-full text-sm">
+                        <table className="w-full min-w-[520px] text-sm">
                           <thead>
                             <tr className="border-b border-zinc-800 bg-zinc-950/50">
                               <th className="text-left py-3 px-3 font-medium text-gray-300">Brand</th>
@@ -2540,9 +2569,14 @@ const PromotionAnalysis: FC = () => {
               <>
                 {/* When multiple competitors (not Brand on Brand): show combined per-brand chart */}
                 {!appliedBrandOnBrand && combinedCompetitorChartData.length > 0 && combinedChartCompetitors.length > 0 ? (
-                  <div className="h-96 w-full mb-6">
+                  // One bar per competitor per time bucket — with several
+                  // competitors selected this can be a dozen+ bars crammed
+                  // into one width. Give each bucket a floor width and let
+                  // the surplus scroll instead of shrinking bars to slivers.
+                  <div className="h-96 w-full mb-6 overflow-x-auto thin-scrollbar chart-scroll">
+                  <div style={{ minWidth: combinedCompetitorChartData.length * Math.max(160, (1 + combinedChartCompetitors.length) * 46), height: '100%' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={combinedCompetitorChartData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
+                      <BarChart data={combinedCompetitorChartData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }} barCategoryGap="20%">
                         <defs>
                           <linearGradient id="cg0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
                           {combinedChartCompetitors.map((brand, idx) => {
@@ -2579,10 +2613,11 @@ const PromotionAnalysis: FC = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
+                  </div>
                 ) : (
-                  <div className="h-80 w-full mb-6">
+                  <div className="h-80 w-full mb-6 chart-scroll">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={displayData.activityChart} margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
+                      <BarChart data={displayData.activityChart} margin={{ top: 30, right: 20, left: 0, bottom: 5 }} barCategoryGap="30%">
                         <defs>
                           <linearGradient id="barGradPurple" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
                           <linearGradient id="barGradOrange" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fb923c" /><stop offset="100%" stopColor="#ea580c" /></linearGradient>
@@ -2612,7 +2647,7 @@ const PromotionAnalysis: FC = () => {
                   </div>
                 )}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[520px] text-sm">
                     <thead>
                       <tr className="border-b border-zinc-800">
                         <th className="text-left py-3 font-medium text-gray-300 pr-2">Timeline</th>
@@ -2702,10 +2737,14 @@ const PromotionAnalysis: FC = () => {
             <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6"><h2 className="text-lg font-semibold text-white mb-4 sm:mb-0">Price Trend on the basis of:</h2><div className="flex flex-wrap gap-4">{priceOptions.map(({ label, value }) => (<label key={value} className="flex items-center cursor-pointer"><input type="radio" name="priceType" value={value} checked={priceTrendType === value} onChange={(e) => setPriceTrendType(e.target.value)} className="form-radio bg-zinc-700 border-zinc-600 text-purple-500" /><span className="text-sm text-gray-300 ml-2">{label}</span></label>))}</div></div>
               <div className="text-center mb-4"><h3 className="text-base font-medium text-gray-300">{priceTrendChartTitle}</h3></div>
-              <div className="h-80 w-full mb-6">
+              <div className="h-80 w-full mb-6 chart-scroll">
                 {!appliedBrandOnBrand && appliedCompetitors.filter(c => c && c !== ALL_COMPETITORS).length > 1 && perBrandPeriodMap.size > 0 ? (
+                  // Same crowding risk as the activity chart above: one bar
+                  // per competitor per period, scrolls instead of crushing.
+                  <div className="h-full w-full overflow-x-auto thin-scrollbar">
+                  <div style={{ minWidth: combinedCompetitorPriceTrendChartData.length * Math.max(160, (1 + combinedChartCompetitors.length) * 46), height: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={combinedCompetitorPriceTrendChartData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
+                    <BarChart data={combinedCompetitorPriceTrendChartData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }} barCategoryGap="20%">
                       <defs>
                         <linearGradient id="cgPrice0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
                         {combinedChartCompetitors.map((brand, idx) => {
@@ -2746,9 +2785,11 @@ const PromotionAnalysis: FC = () => {
                       ))}
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
+                  </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={displayData.priceTrendChart} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={displayData.priceTrendChart} margin={{ top: 30, right: 30, left: 20, bottom: 5 }} barCategoryGap="30%">
                       <defs>
                         <linearGradient id="barGradPurplePrice" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
                         <linearGradient id="barGradOrangePrice" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fb923c" /><stop offset="100%" stopColor="#ea580c" /></linearGradient>
@@ -2781,7 +2822,7 @@ const PromotionAnalysis: FC = () => {
                   </ResponsiveContainer>
                 )}
               </div>
-              <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-zinc-800"><th className="text-left py-3 font-medium text-gray-300"></th><th className="text-center py-3 font-medium text-gray-300">Latest 4 wks</th><th className="text-center py-3 font-medium text-gray-300">Latest 12 wks</th><th className="text-center py-3 font-medium text-gray-300">YTD</th><th className="text-center py-3 font-medium text-gray-300">Latest 52 wks</th></tr></thead><tbody>{displayData.priceTrendTable.map(row => (<tr key={row.brand} className="border-b border-zinc-800 last:border-b-0"><td className="py-3 font-medium text-gray-300">{row.brand}</td><td className="text-center py-3 text-white">{row.latest4Weeks}</td><td className="text-center py-3 text-white">{row.latest12Weeks}</td><td className="text-center py-3 text-white">{row.ytd}</td><td className="text-center py-3 text-white">{row.latest52Weeks}</td></tr>))}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-zinc-800"><th className="text-left py-3 font-medium text-gray-300"></th><th className="text-center py-3 font-medium text-gray-300">Latest 4 wks</th><th className="text-center py-3 font-medium text-gray-300">Latest 12 wks</th><th className="text-center py-3 font-medium text-gray-300">YTD</th><th className="text-center py-3 font-medium text-gray-300">Latest 52 wks</th></tr></thead><tbody>{displayData.priceTrendTable.map(row => (<tr key={row.brand} className="border-b border-zinc-800 last:border-b-0"><td className="py-3 font-medium text-gray-300">{row.brand}</td><td className="text-center py-3 text-white">{row.latest4Weeks}</td><td className="text-center py-3 text-white">{row.latest12Weeks}</td><td className="text-center py-3 text-white">{row.ytd}</td><td className="text-center py-3 text-white">{row.latest52Weeks}</td></tr>))}</tbody></table></div>
             </div>
           )}
 

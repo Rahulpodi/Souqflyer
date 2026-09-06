@@ -21,7 +21,8 @@ import {
   ArrowLeft,
   Loader2,
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  GitCompare
 } from "lucide-react";
 import {
   Select,
@@ -1756,7 +1757,7 @@ useEffect(() => {
         </div>
 
         {/* --- TOP FILTER BAR 2 --- */}
-        <div className="mt-6 space-y-4">
+        <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Category Dropdown */}
 <Popover>
@@ -1764,7 +1765,7 @@ useEffect(() => {
     <button
       type="button"
       disabled={isLoadingCategories}
-      className="flex h-9 w-full sm:w-[220px] min-w-0 items-center justify-between rounded-md border border-white/30 bg-white/5 px-3 text-sm text-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex h-9 w-[calc(50%-6px)] sm:w-[220px] min-w-0 items-center justify-between rounded-md border border-white/30 bg-white/5 px-3 text-sm text-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div className="flex items-center gap-2 min-w-0">
         <LayoutGrid className="h-4 w-4 text-gray-300 flex-shrink-0" />
@@ -1859,8 +1860,8 @@ useEffect(() => {
 
 
             <Select value={subCategory} onValueChange={setSubCategory} disabled={category.length === 0 || isLoadingSubCategories}>
-              <SelectTrigger className="h-9 w-full sm:w-[220px] bg-white/5 border border-white/30 text-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                <div className="flex items-center gap-2"> <LayoutGrid className="h-4 w-4 text-gray-300" /> <SelectValue placeholder="Select Sub-Category" /> </div>
+              <SelectTrigger className="h-9 w-[calc(50%-6px)] sm:w-[220px] bg-white/5 border border-white/30 text-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                <div className="flex items-center gap-2 min-w-0"> <LayoutGrid className="h-4 w-4 text-gray-300 flex-shrink-0" /> <span className="truncate"><SelectValue placeholder="Select Sub-Category" /></span> </div>
               </SelectTrigger>
               <SelectContent className="bg-black/80 backdrop-blur-md border-white/20 text-white">
                 <SelectItem value="all" className="cursor-pointer data-[highlighted]:bg-zinc-700 data-[highlighted]:text-gray-50">All Sub-Categories</SelectItem>
@@ -1897,7 +1898,7 @@ useEffect(() => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-7">
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4 sm:mt-7">
             <div className="flex items-center space-x-2">
               <Switch id="distinct-toggle" checked={showDistinct} onCheckedChange={setShowDistinct} className="data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-gray-700" />
               <Label htmlFor="distinct-toggle" className="text-sm font-medium text-white cursor-pointer">{showDistinct ? 'Distinct Offers' : 'Showing Duplicates'}</Label>
@@ -1953,7 +1954,7 @@ useEffect(() => {
           )}
 
           <div className="flex-1 min-w-0">
-            <div className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-lg p-6 md:p-10 shadow-lg min-h-[420px]">
+            <div className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-lg p-4 sm:p-6 md:p-10 shadow-lg min-h-[420px]">
               {!applied ? (
                 <div className="flex items-center justify-center h-full min-h-[300px]">
                   <p className="text-xl font-semibold text-white ">Welcome to Offer Index</p>
@@ -2019,7 +2020,7 @@ useEffect(() => {
                             <th scope="col" className="px-4 py-3 text-left w-32 border-b border-white/10 whitespace-nowrap">Promo Mechanic</th>
                             <th scope="col" className="px-4 py-3 text-left w-24 border-b border-white/10 whitespace-nowrap">Promo Qty</th>
                             <th scope="col" className="px-4 py-3 text-left w-32 border-b border-white/10 whitespace-nowrap">Offer Image ID</th>
-                            <th scope="col" className="px-4 py-3 text-center w-28 border-b border-white/10 whitespace-nowrap">Offer Image</th>
+                            <th scope="col" className="px-4 py-3 text-center w-28 border-b border-white/10 whitespace-nowrap">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10">
@@ -2060,7 +2061,7 @@ useEffect(() => {
                       </table>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                       {paginatedResults.map((o) => {
                         const isInCompareList = compareList.some(item => item.id === o.id);
                         const isSaved = savedOffers.some(item => item.id === o.id);
@@ -2093,8 +2094,8 @@ useEffect(() => {
                                 {o.original > o.price && (<span className="text-xs text-zinc-500 line-through">{currencySymbol} {o.original}</span>)}
                               </div>
                               <div className="flex items-center justify-between gap-2 mt-auto mb-4">
-                                <span className="text-xs font-semibold text-zinc-400 truncate max-w-[120px]">{o.retailer}</span>
-                                <span className="text-zinc-200 font-bold font-mono text-[11px] whitespace-nowrap shrink-0 text-right">{formatOfferTimeline(o.startDate, o.endDate, o.valid)}</span>
+                                <span className="text-xs font-semibold text-zinc-400 truncate min-w-0 flex-1">{o.retailer}</span>
+                                <span className="text-zinc-200 font-bold font-mono text-[11px] truncate max-w-[45%] text-right" title={formatOfferTimeline(o.startDate, o.endDate, o.valid)}>{formatOfferTimeline(o.startDate, o.endDate, o.valid)}</span>
                               </div>
                               <div>
                                 <button onClick={() => { setDetailOffer(o); setDetailOpen(true); }} className="h-8 w-full rounded-md bg-zinc-800 hover:bg-gradient-to-r hover:from-purple-600 hover:to-orange-500 text-white hover:text-white border border-white/10 hover:border-transparent transition-all duration-300 text-xs font-medium shadow-md">
@@ -2220,9 +2221,21 @@ useEffect(() => {
           {applied && (
             <>
               {/* Compare Button */}
-              <button onClick={handleCompareClick} className="fixed bottom-8 right-8 z-50 flex items-center justify-center gap-2 h-14 w-40 rounded-full bg-gradient-to-r from-purple-500 to-orange-500 text-white font-bold shadow-lg transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-400/50 disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0">
-                <span>Compare</span>
-                {compareList.length > 0 && (<span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-sm">{compareList.length}</span>)}
+              {/* Stays visible and clickable at every size (clicking it with
+                  fewer than two picks raises the "select two offers" toast).
+                  On phones a 160px pill covered 41% of the screen width over
+                  the offer cards, so below sm it collapses to an icon circle —
+                  identical behaviour, same gradient, sm+ is untouched. */}
+              <button
+                onClick={handleCompareClick}
+                aria-label="Compare selected offers"
+                className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 flex items-center justify-center gap-2 h-14 w-14 sm:w-40 rounded-full bg-gradient-to-r from-purple-500 to-orange-500 text-white font-bold shadow-lg transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-400/50 disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                <GitCompare className="h-5 w-5 sm:hidden" />
+                <span className="hidden sm:inline">Compare</span>
+                {compareList.length > 0 && (
+                  <span className="absolute -top-1 -right-1 sm:static flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-white/20 text-xs sm:text-sm ring-2 ring-black/40 sm:ring-0">{compareList.length}</span>
+                )}
               </button>
 
               <Dialog open={compareOpen} onOpenChange={setCompareOpen}>

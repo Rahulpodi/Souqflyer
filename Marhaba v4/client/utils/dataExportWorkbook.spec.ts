@@ -37,6 +37,13 @@ describe("data export workbook", () => {
   });
 
   describe("toFullDataRow", () => {
+    it("rounds money columns to two decimals", () => {
+      const r = toFullDataRow({ ...row, discounted_price: "6.123456", regular_price: "10.987654" });
+      expect(r.price).toBe(6.12);
+      expect(r.discounted_from).toBe(10.99);
+      expect(String(r.pricperkg).split(".")[1]?.length ?? 0).toBeLessThanOrEqual(2);
+    });
+
     it("derives year, month, price per kg and discount", () => {
       const r = toFullDataRow(row);
       expect(r.flyer_year).toBe(2025);
@@ -125,6 +132,14 @@ describe("data export workbook", () => {
       for (const field of fields) {
         expect(field).toContain(field.includes('subtotal="count"') ? 'numFmtId="1"' : 'numFmtId="2"');
       }
+    });
+
+    it("drops cached filter values that the exported rows no longer contain", () => {
+      // Without missingItemsLimit="0" Excel keeps the template's own years and
+      // months in the pivot filter dropdowns forever.
+      const patched = patchCacheDefinition(cacheXml, 3);
+      expect(patched).toContain('missingItemsLimit="0"');
+      expect((patched.match(/missingItemsLimit=/g) ?? []).length).toBe(1);
     });
 
     it("repoints the cache and forces a refresh on open", () => {
