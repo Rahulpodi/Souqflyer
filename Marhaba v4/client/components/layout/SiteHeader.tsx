@@ -50,11 +50,12 @@ export default function SiteHeader() {
   return (
     <TooltipProvider>
       <header className="relative w-full bg-black/30 backdrop-blur-lg">
-        <div className="container flex h-16 sm:h-20 md:h-28 items-center justify-between gap-2">
+        <div className="container flex h-20 sm:h-24 md:h-32 items-center justify-between gap-2">
           {/* Logo — flex-shrink-0 so it can't be squeezed to a sliver when
-              the nav links + icons don't all fit a narrow screen. */}
+              the nav links + icons don't all fit a narrow screen. Same size
+              on every page (shared header), bumped up per request. */}
           <Link to="/" className="flex items-center flex-shrink-0">
-            <img src={logo} alt="Marhaba AI Logo" className="h-12 sm:h-16 md:h-24 w-auto" />
+            <img src={logo} alt="Marhaba AI Logo" className="h-16 sm:h-20 md:h-28 w-auto" />
           </Link>
 
           {/* Right Side */}

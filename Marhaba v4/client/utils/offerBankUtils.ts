@@ -42,6 +42,26 @@ export const getCurrency = (countryName: string | null | undefined): string => {
   return currencyByLowerName[countryName.trim().toLowerCase()] || "";
 };
 
+// Saudi Arabia's source flyer crops are the only ones shipped at full
+// resolution; every other country's crops are visibly softer.
+export const isSaudi = (countryName: string | null | undefined): boolean => {
+  if (!countryName) return false;
+  const c = countryName.trim().toLowerCase();
+  return c === "ksa" || c.includes("saudi");
+};
+
+// Routes non-Saudi offer images through /api/image-proxy, which fetches the
+// image server-side and runs a real unsharp mask on it — a CSS filter can't
+// do this because the S3 bucket serving these images sends no CORS headers,
+// so the browser refuses to read pixels for any filter that needs them.
+export const enhancedImageUrl = (
+  url: string | null | undefined,
+  country: string | null | undefined,
+): string => {
+  if (!url || isSaudi(country) || !/^https:\/\//i.test(url)) return url || "";
+  return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+};
+
 // Data arrives inconsistently cased from the source flyers ("saudi arabia",
 // "LULU HYPERMARKET"); display it title-cased without touching the stored value.
 // Short all-caps tokens are acronyms (UAE, KSA, N/A, SAR) and stay as they are.

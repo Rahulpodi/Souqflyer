@@ -462,6 +462,16 @@
   filter: invert(1) !important;
 }
 
+/* Non-Saudi offer flyer crops ship at a lower native resolution than Saudi's,
+   so object-contain upscaling reads as blurry. feConvolveMatrix (SVG unsharp
+   mask) silently no-ops on these cross-origin Supabase storage images — the
+   browser won't run pixel-reading filters on tainted images — so this sticks
+   to compositor-level CSS filters, which apply regardless of origin. */
+.offer-img-enhance {
+  filter: contrast(1.18) saturate(1.15) brightness(1.03);
+  image-rendering: -webkit-optimize-contrast;
+}
+
 
 
 

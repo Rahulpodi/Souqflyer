@@ -84,15 +84,15 @@ export default function Index() {
     <div className="py-8 md:py-12">
       <div className="space-y-10">
         {/* Top feature cards */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-8 md:grid-cols-2">
           {/* Offer Index */}
-          <Card className="flex flex-col justify-between p-8 gap-6 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800/80">
-            <div className="space-y-4">
-              <div className="rounded-xl bg-slate-100 text-slate-900 dark:bg-zinc-800 dark:text-purple-400 p-3 inline-block">
-                <BookOpenText className="h-8 w-8" />
+          <Card className="flex flex-col justify-between p-4 sm:p-8 gap-3 sm:gap-6 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800/80">
+            <div className="space-y-2 sm:space-y-4">
+              <div className="rounded-xl bg-slate-100 text-slate-900 dark:bg-zinc-800 dark:text-purple-400 p-2 sm:p-3 inline-block">
+                <BookOpenText className="h-5 w-5 sm:h-8 sm:w-8" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-50">Offer Index</h2>
-              <p className="text-slate-600 dark:text-zinc-400 max-w-md">
+              <h2 className="text-lg sm:text-3xl font-bold text-slate-900 dark:text-zinc-50">Offer Index</h2>
+              <p className="hidden sm:block text-slate-600 dark:text-zinc-400 max-w-md">
                 A visual repository presenting current and previous offers and
                 flyers, updated bi-weekly.
               </p>
@@ -100,8 +100,8 @@ export default function Index() {
             <Link
               to="/offer-bank"
               className="group inline-flex items-center gap-2
-                  h-10 px-5 w-fit
-                  rounded-full font-semibold text-white text-sm
+                  h-8 sm:h-10 px-4 sm:px-5 w-fit
+                  rounded-full font-semibold text-white text-xs sm:text-sm
                   bg-black dark:bg-purple-600 dark:hover:bg-purple-700
                   transition-colors duration-300 ease-in-out
                   hover:bg-slate-800
@@ -113,13 +113,13 @@ export default function Index() {
           </Card>
 
           {/* Promotion Analysis */}
-          <Card className="flex flex-col justify-between p-8 gap-8 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800/80">
-            <div className="space-y-4">
-              <div className="rounded-xl bg-slate-100 text-slate-900 dark:bg-zinc-800 dark:text-purple-400 p-3 inline-block">
-                <ChartSpline className="h-8 w-8" />
+          <Card className="flex flex-col justify-between p-4 sm:p-8 gap-3 sm:gap-8 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800/80">
+            <div className="space-y-2 sm:space-y-4">
+              <div className="rounded-xl bg-slate-100 text-slate-900 dark:bg-zinc-800 dark:text-purple-400 p-2 sm:p-3 inline-block">
+                <ChartSpline className="h-5 w-5 sm:h-8 sm:w-8" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-50">Promotion Analysis</h2>
-              <p className="text-slate-600 dark:text-zinc-400 max-w-md">
+              <h2 className="text-lg sm:text-3xl font-bold text-slate-900 dark:text-zinc-50">Promotion Analysis</h2>
+              <p className="hidden sm:block text-slate-600 dark:text-zinc-400 max-w-md">
                 In-depth promo insights and pricing analysis to support
                 strategic decision-making and gain a competitive edge.
               </p>
@@ -127,8 +127,8 @@ export default function Index() {
             <Link
               to="/promotion-analysis"
               className="group inline-flex items-center gap-2
-                  h-10 px-5 w-fit
-                  rounded-full font-semibold text-white text-sm
+                  h-8 sm:h-10 px-4 sm:px-5 w-fit
+                  rounded-full font-semibold text-white text-xs sm:text-sm
                   bg-black dark:bg-purple-600 dark:hover:bg-purple-700
                   transition-colors duration-300 ease-in-out
                   hover:bg-slate-800

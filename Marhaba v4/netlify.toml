@@ -5,7 +5,7 @@
 
 
 [functions]
-  external_node_modules = ["express"]
+  external_node_modules = ["express", "sharp"]
   node_bundler = "esbuild"
   
 [[redirects]]
