@@ -95,6 +95,8 @@ const MAX_COMPETITOR_SELECTION = 3;
 const FILTER_PREFS_KEY = 'promotion_analysis_country_filters_v1';
 /** Max brands shown as separate mini charts in Overall when a category is applied (not Brand-on-Brand). */
 const OVERALL_CATEGORY_BRAND_CAP = 5;
+/** Dropdown renders at most this many options; search narrows the rest. */
+const MAX_RENDERED_OPTIONS = 200;
 
 // Compared case-insensitively: the dimension source has changed casing before
 // ("Frozen Fries" -> "frozen fries") and an exact match emptied every dropdown.
@@ -276,7 +278,9 @@ const CustomFilterDropdown: FC<CustomDropdownProps> = ({
           </button>
 
           <div className="space-y-0.5 max-h-52 overflow-y-auto thin-scrollbar">
-            {sortedOptions.map((opt) => {
+            {/* ponytail: hard cap instead of virtualization — thousands of
+                brand buttons froze the tab. Search narrows past the cap. */}
+            {sortedOptions.slice(0, MAX_RENDERED_OPTIONS).map((opt) => {
               const isSelected = value === opt;
               return (
                 <button
@@ -297,6 +301,11 @@ const CustomFilterDropdown: FC<CustomDropdownProps> = ({
                 </button>
               );
             })}
+            {sortedOptions.length > MAX_RENDERED_OPTIONS && (
+              <div className="px-3 py-2 text-xs text-zinc-500 text-center">
+                Showing {MAX_RENDERED_OPTIONS} of {sortedOptions.length} — type to search
+              </div>
+            )}
             {searchable && filteredOptions.length === 0 && (
               <div className="px-3 py-2 text-xs text-zinc-500 text-center">No options found</div>
             )}
@@ -1085,6 +1094,8 @@ const PromotionAnalysis: FC = () => {
   // categories they have permission for. Apply still requires a category.
   useEffect(() => {
     if (!country || selectedCategory) return;
+    const allowedCategoryValues = allCategories.filter(isAllowedCategory);
+    if (allowedCategoryValues.length === 0) return;
     let isMounted = true;
     setIsDropdownLoading(true);
 
@@ -1099,6 +1110,10 @@ const PromotionAnalysis: FC = () => {
             .select('dimension_value, parent_category')
             .eq('country_key', getCountryKey(country))
             .eq('dimension_type', 'brand')
+            // Filter server-side to the allowed categories, using the values the
+            // category dropdown already loaded (the view's own casing), instead
+            // of downloading every brand in every category for the country.
+            .in('parent_category', allowedCategoryValues)
             .range(from, from + PAGE_SIZE - 1);
           if (error) throw error;
           if (!page || page.length === 0) break;
@@ -1126,7 +1141,7 @@ const PromotionAnalysis: FC = () => {
 
     loadCountryWideBrands();
     return () => { isMounted = false; };
-  }, [country, selectedCategory, isCategoryPermitted]);
+  }, [country, selectedCategory, isCategoryPermitted, allCategories]);
 
 
 
@@ -1355,11 +1370,15 @@ const PromotionAnalysis: FC = () => {
             : (appliedCompetitor || 'Competitor')
       );
 
+    // Brands arrive sentence-cased from the pipeline ("Al marai"); display them
+    // title-cased like the dropdowns do.
+    const label1 = toTitleCase(b1);
+    const label2 = toTitleCase(b2);
     return {
-      brand1Label: b1,
-      brand2Label: b2,
+      brand1Label: label1,
+      brand2Label: label2,
       activityTitle: appliedBrandOnBrand ? 'Brand on Brand Share of Activity' : 'My Brand Share of Activity',
-      activityChartTitle: `${b1} vs ${b2} Share of Activity (%)`,
+      activityChartTitle: `${label1} vs ${label2} Share of Activity (%)`,
     };
   }, [appliedBrandOnBrand, appliedBrandA, appliedBrandB, appliedMyBrand, appliedCompetitor, appliedCompetitors]);
 

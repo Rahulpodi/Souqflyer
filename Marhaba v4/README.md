@@ -88,7 +88,13 @@ For production, build first, then start; serve `dist/spa` static files according
 | Path | Role |
 |------|------|
 | **`client/`** | React app entry (`App.tsx`, `pages/`, `components/`, `lib/supabaseClient.ts`). |
-| **`server/`** | Express `createServer()` — dev middleware routes (`/api/ping`, `/api/demo`, …). |
+| **`client/utils/`** | Pure helpers with Vitest specs: `offerBankUtils` (filters, currency, `enhancedImageUrl`), `promotionAnalysisUtils`, `dataExportWorkbook` (Excel pivot export). |
+| **`server/`** | Express `createServer()` — routes `/api/ping`, `/api/demo`, `/api/image-proxy`. |
+| **`server/routes/image-proxy.ts`** | Fetches a flyer image from the allow-listed S3 bucket, upscales + sharpens it with `sharp`. Used for all non-Saudi offer images. |
+| **`supabase/Offerbank/`, `supabase/PROMO-FINAL/`, `supabase/COMPETITOR/`** | **Current live definition of every query the app calls**, one file per function. Folder names match the Supabase SQL editor. See [`supabase/README.md`](supabase/README.md) for which snippet maps to which file. Edit here first, then paste into Supabase. |
+| **`supabase/migrations/`** | Historical change log (RPCs, indexes, RLS/grant lockdown). Older files had drifted from live — trust `PROMO-FINAL/` for the current query text. |
+| **`public/pivot-template.xlsx`** | Template workbook for Data Export — its 5 pivot tables are refreshed from the exported rows on open. |
+| **`netlify/functions/api.ts`** | Runs the same Express app as a Netlify function; `netlify.toml` routes `/api/*` to it. |
 | **`shared/`** | Code shared between client and server (types, helpers). |
 | **`vite.config.ts`** | Vite + React; dev-only Express plugin. |
 | **`vite.config.server.ts`** | Separate build for the server entry. |
@@ -102,5 +108,8 @@ For production, build first, then start; serve `dist/spa` static files according
 | Blank app / Supabase errors | `VITE_SUPABASE_*` set? Restart dev server after editing `.env`. |
 | Login works but data empty | RLS policies and RPC grants on Supabase for the logged-in user. |
 | Port already in use | Change port in `vite.config.ts` `server.port` or stop the other process. |
+| Offer images broken / not sharpened | `/api/image-proxy` needs the Express server: works in `npm run dev` and on Netlify (`sharp` listed in `external_node_modules`). Vercel has no `/api` wiring. |
+| "canceling statement due to statement timeout" | Offer Bank query too broad for the DB timeout — narrow filters, check `20260711_flyer_products_indexes.sql` is applied. |
+| All Countries export returns nothing | Run `supabase/migrations/20260802_detail_rpc_all_countries.sql` on the live DB. |
 
 This README describes **Marhaba v4** as laid out in **`Frontend/Marhaba v4`**. Backend RPC and table names must match your Supabase project.

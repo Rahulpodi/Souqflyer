@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getRegionsForCountry,
   getCurrency,
+  enhancedImageUrl,
   sameStringArray,
   splitRegionValues,
   normalizeSingleValue,
@@ -183,6 +184,15 @@ describe("Offer Bank Utility Helpers", () => {
       expect(toTitleCase("KSA")).toBe("KSA");
       expect(toTitleCase("N/A")).toBe("N/A");
       expect(toTitleCase("McCain")).toBe("Mccain");
+    });
+  });
+  describe("enhancedImageUrl", () => {
+    const u = "https://flyer-image-storage.s3.ap-south-1.amazonaws.com/a.jpg";
+    it("proxies UAE only", () => {
+      expect(enhancedImageUrl(u, "Uae")).toBe(`/api/image-proxy?url=${encodeURIComponent(u)}`);
+      expect(enhancedImageUrl(u, "Oman")).toBe(u);
+      expect(enhancedImageUrl(u, "Saudi arabia")).toBe(u);
+      expect(enhancedImageUrl(null, "Uae")).toBe("");
     });
   });
 });

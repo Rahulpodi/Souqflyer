@@ -72,7 +72,7 @@ import {
   parseValidRange,
   parsePrice,
   toTitleCase,
-  isSaudi,
+  isUae,
   enhancedImageUrl
 } from '../utils/offerBankUtils';
 
@@ -456,7 +456,9 @@ const mapDbOfferToFrontend = (p: any): Offer => {
     const brandLower = rawBrand.toLowerCase();
     const nameLower = rawProductName.toLowerCase();
     if (!nameLower.includes(brandLower)) {
-      formattedTitle = `${rawBrand} ${rawProductName}`;
+      // Brands arrive sentence-cased from the pipeline ("Al aila"); show them
+      // title-cased like the brand column and dropdowns.
+      formattedTitle = `${toTitleCase(rawBrand)} ${rawProductName}`;
     }
   }
 
@@ -470,7 +472,7 @@ const mapDbOfferToFrontend = (p: any): Offer => {
     retailer: p.mart_name || 'N/A',
     country: p.country || 'N/A',
     valid: p.offer_timeline || 'N/A',
-    brand: isBrandValid ? rawBrand : 'N/A',
+    brand: isBrandValid ? toTitleCase(rawBrand) : 'N/A',
     productType: p.type || 'N/A',
     category: p.category || 'N/A',
     packSize: p.weight_quantity || 'N/A',
@@ -2035,7 +2037,7 @@ useEffect(() => {
                                   <input type="checkbox" aria-label={`Select ${o.title}`} checked={isInCompareList} onChange={() => { if (isInCompareList) { removeFromCompare(o.id); } else { addToCompare(o); } }} className="h-4 w-4 cursor-pointer rounded border-gray-500 bg-zinc-800 text-purple-600 focus:ring-purple-500 focus:ring-offset-0" />
                                 </td>
                                 <td className="px-4 py-3 text-center align-middle text-gray-400">{(page - 1) * ITEMS_PER_PAGE + idx + 1}</td>
-                                <td className="px-4 py-3 align-middle"><div className="flex justify-center"><img src={enhancedImageUrl(o.image, o.country) || '/placeholder.svg'} alt={o.title} className={`h-10 w-10 object-contain rounded bg-white p-0.5 ${isSaudi(o.country) ? '' : 'offer-img-enhance'}`} /></div></td>
+                                <td className="px-4 py-3 align-middle"><div className="flex justify-center"><img src={enhancedImageUrl(o.image, o.country) || '/placeholder.svg'} alt={o.title} className={`h-10 w-10 object-contain rounded bg-white p-0.5 ${isUae(o.country) ? 'offer-img-enhance' : ''}`} /></div></td>
                                 <td className="px-4 py-3 align-middle font-medium text-white whitespace-nowrap">{toTitleCase(o.country)}</td>
                                 <td className="px-4 py-3 align-middle font-medium text-white whitespace-normal">{toTitleCase(o.title)}</td>
                                 <td className="px-4 py-3 align-middle whitespace-nowrap">
@@ -2070,7 +2072,7 @@ useEffect(() => {
                         return (
                           <div key={o.id} className="rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-md overflow-hidden shadow-lg flex flex-col h-full transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:-translate-y-0.5 group/card">
                             <div className="relative h-56 bg-white/5 flex items-center justify-center p-0">
-                              <img src={enhancedImageUrl(o.image, o.country) || '/placeholder.svg'} alt={o.title} className={`h-full w-full object-contain transition-transform duration-300 group-hover/card:scale-105 ${isSaudi(o.country) ? '' : 'offer-img-enhance'}`} />
+                              <img src={enhancedImageUrl(o.image, o.country) || '/placeholder.svg'} alt={o.title} className={`h-full w-full object-contain transition-transform duration-300 group-hover/card:scale-105 ${isUae(o.country) ? 'offer-img-enhance' : ''}`} />
                               <button aria-label="select for compare" onClick={() => { if (isInCompareList) { removeFromCompare(o.id); } else { addToCompare(o); } }} className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white z-20">
                                 {isInCompareList ? <CheckCircle className="h-4 w-4" /> : <span className="block h-3 w-3 rounded-full bg-white/50" />}
                               </button>
@@ -2194,7 +2196,7 @@ useEffect(() => {
               <div className="mt-4 space-y-4">
                 {savedOffers.length === 0 ? (<div className="text-center text-zinc-400 py-8">No saved offers yet.</div>) : (savedOffers.map((o) => (
                   <div key={o.id} className="flex items-center gap-4 p-3 rounded-lg bg-white/5 border border-zinc-700">
-                    <img src={enhancedImageUrl(o.image, o.country)} alt={o.title} className={`h-16 w-16 object-contain bg-white rounded ${isSaudi(o.country) ? '' : 'offer-img-enhance'}`} />
+                    <img src={enhancedImageUrl(o.image, o.country)} alt={o.title} className={`h-16 w-16 object-contain bg-white rounded ${isUae(o.country) ? 'offer-img-enhance' : ''}`} />
                     <div className="flex-1 min-w-0"><h4 className="text-white font-medium truncate">{o.title}</h4><div className="flex items-center gap-2 text-sm"><span className="text-purple-400 font-bold">{currencySymbol} {o.price}</span></div></div>
                     <button onClick={() => { setDetailOffer(o); setDetailOpen(true); setSavedDialogOpen(false); }} className="px-3 py-1.5 text-xs bg-white text-black rounded hover:bg-gray-200">View</button>
                     <button onClick={() => toggleFavorite(o)} aria-label="Remove from saved offers" className="p-2 text-red-500 hover:bg-white/10 rounded" title="Unlike">
@@ -2511,7 +2513,7 @@ function OfferDetailDialog({
           
           {/* Left Column: Image wrapper with white background */}
           <div className="md:w-1/3 bg-white p-4 flex items-center justify-center rounded-lg border border-white/5 shadow-md shrink-0">
-            <img src={enhancedImageUrl(offer.image, offer.country) || '/placeholder.svg'} alt={offer.title} className={`max-h-64 object-contain ${isSaudi(offer.country) ? '' : 'offer-img-enhance'}`} />
+            <img src={enhancedImageUrl(offer.image, offer.country) || '/placeholder.svg'} alt={offer.title} className={`max-h-64 object-contain ${isUae(offer.country) ? 'offer-img-enhance' : ''}`} />
           </div>
 
           {/* Right Column: Tailored information */}

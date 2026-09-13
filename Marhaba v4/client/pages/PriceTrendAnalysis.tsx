@@ -421,7 +421,8 @@ const PriceTrendAnalysis = ({
     if (!c) return '';
     const trimmed = c.trim();
     const lower = trimmed.toLowerCase();
-    if (lower === 'united arab emirates' || lower === 'uae') return 'United Arab Emirates';
+    // flyer_products stores the Emirates as "Uae"; the detail RPC compares lower(country).
+    if (lower === 'united arab emirates' || lower === 'uae') return 'uae';
     return trimmed;
   };
 

@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 // [FIXED] Changed to CDN import to avoid module resolution errors in this environment
 import { createClient } from "@supabase/supabase-js";
 import SiteHeader from "../components/layout/SiteHeader";
+import { useToast } from "@/hooks/use-toast";
 
 // Initialize Supabase client
 import { supabase } from '@/lib/supabaseClient';
@@ -13,6 +14,7 @@ export default function VerifyOtp() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth(); // Removed verifyOtp from destructuring if it's not in context, using local logic or assuming it's passed
+  const { toast } = useToast();
 
   // Mock verifyOtp function if not in context (adjust based on your actual AuthContext)
   const verifyOtp = async (email: string, token: string) => {
@@ -42,14 +44,17 @@ export default function VerifyOtp() {
 
     setLoading(true);
     const success = await verifyOtp(email, otp);
-    setLoading(false);
 
     if (!success) {
+      setLoading(false);
       setError("Invalid OTP");
     } else {
-        // Handle successful verification
-        alert("Verification Successful!");
-        window.location.href = "/";
+      setError("");
+      // Themed toast instead of the browser's alert(). The redirect is a full
+      // reload (resets auth context), so give the toast a moment on screen and
+      // keep the button disabled meanwhile.
+      toast({ title: "Verification successful", description: "Signing you in…" });
+      setTimeout(() => { window.location.href = "/"; }, 1200);
     }
   };
 
@@ -60,7 +65,11 @@ export default function VerifyOtp() {
       options: { shouldCreateUser: false },
     });
     setLoading(false);
-    if (!error) alert("OTP resent!");
+    if (error) {
+      toast({ title: "Couldn't resend code", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Code sent", description: `A new code was sent to ${email}.` });
+    }
   };
 
   return (
