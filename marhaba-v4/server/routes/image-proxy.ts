@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import sharp from "sharp";
 
 // Non-Saudi flyer crops come out of the scraper heavily JPEG-compressed

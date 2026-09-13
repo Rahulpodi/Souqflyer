@@ -1,6 +1,6 @@
-# Marhaba v4 — Offer index & analytics (React + Vite)
+# marhaba-v4 — Offer index & analytics (React + Vite)
 
-**Marhaba v4** is the main **customer-facing** web app: **Supabase-backed** pages for flyer offers, promotion analysis, saved filters, and **email OTP login**. The dev server runs **Vite** and mounts a small **Express** app as middleware so API routes like `/api/ping` and `/api/demo` work on the **same origin** as the SPA during development.
+**marhaba-v4** is the main **customer-facing** web app: **Supabase-backed** pages for flyer offers, promotion analysis, saved filters, and **email OTP login**. The dev server runs **Vite** and mounts a small **Express** app as middleware so API routes like `/api/ping` and `/api/demo` work on the **same origin** as the SPA during development.
 
 ---
 
@@ -26,7 +26,7 @@ Client code lives under **`client/`** (React, React Router, TanStack Query, Tail
 
 ## Configuration
 
-Create **`.env`** in **`Marhaba v4/`** (project root, next to `package.json`). The client reads **Vite** variables:
+Create **`.env`** in **`marhaba-v4/`** (project root, next to `package.json`). The client reads **Vite** variables:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -47,7 +47,7 @@ Restart the dev server after changing `.env`.
 
 ## How to run (local)
 
-From **`Frontend/Marhaba v4`** (this folder):
+From **`Frontend/marhaba-v4`** (this folder):
 
 **Using pnpm (recommended by package.json):**
 
@@ -112,4 +112,4 @@ For production, build first, then start; serve `dist/spa` static files according
 | "canceling statement due to statement timeout" | Offer Bank query too broad for the DB timeout — narrow filters, check `20260711_flyer_products_indexes.sql` is applied. |
 | All Countries export returns nothing | Run `supabase/migrations/20260802_detail_rpc_all_countries.sql` on the live DB. |
 
-This README describes **Marhaba v4** as laid out in **`Frontend/Marhaba v4`**. Backend RPC and table names must match your Supabase project.
+This README describes **marhaba-v4** as laid out in **`Frontend/marhaba-v4`**. Backend RPC and table names must match your Supabase project.
